@@ -1,0 +1,4 @@
+# Keep every byte as it is: the Merlin sources must reach the disk
+# unchanged.
+* -text
+*.S linguist-language=Assembly

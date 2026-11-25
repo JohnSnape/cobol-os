@@ -1,0 +1,22 @@
+# The public repo is the kernel alone (the user, 2026-11-25), so that
+# others can use it in their own projects.  The COBOL fork and its
+# test suite stay here.
+
+# ---- the COBOL.OS build of COBOL ----
+cobol/
+tools/suite/
+tools/cobbuild.sh
+tools/forkdiff.sh
+tools/check.js
+tools/emu/putcobol.ps1
+tools/emu/mkdisk.ps1
+tools/emu/mk800.ps1
+tools/emu/mk800-stage/
+
+# ---- build output and test leftovers ----
+build/
+tools/emu/*.png
+tools/emu/print-test.txt
+*.po
+*.dsk
+*.2mg
