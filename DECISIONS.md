@@ -800,3 +800,14 @@ for their own projects.
     as `COBOL.SYSTEM`, or another name set at `KLNAM` in `KCALL2.S`.
 - **STATUS.md's node path** now reads `%LOCALAPPDATA%`, with no user
   name in it.
+- **The README lists the calls** (the user, the same day). The table has
+  all 19, with each call's number, parameter count and differences from
+  ProDOS. It is checked against `KMLI.S`'s `KCTAB`/`KPCTAB` and each
+  handler's header comment. Two notes are drawn from the code:
+  - `SET_MARK` past the end of the file gives `$4D`, as ProDOS does.
+    DESIGN §3.1's sparse-file line glosses over this; a hole is made
+    with `SET_EOF`.
+  - `CLOSE 0` closes every file, because there are no file levels.
+
+  The calls not provided are listed with their numbers. **"SmartPort
+  devices only" is stated at the top of the README.**

@@ -1,5 +1,10 @@
 # COBOL.OS: a small ProDOS-compatible kernel for the Apple IIe
 
+> **SmartPort devices only.** COBOL.OS drives 3.5" disks and hard disks
+> through SmartPort firmware, and nothing else. It has no Disk II (5.25")
+> driver, no /RAM disk, and no support for ProDOS block-device drivers.
+> A volume it boots from, or reads, must be on a SmartPort device.
+
 COBOL.OS is a 7K replacement for ProDOS 8, written in 65C02 assembly. It
 sits in the main language card, is entered at `$BF00`, and answers ProDOS's
 own MLI calls with ProDOS's call numbers, parameter blocks and error codes on
@@ -16,17 +21,49 @@ disk format and calls, not from ProDOS's code.
 
 ## What it does
 
-**These 19 calls**, with ProDOS's numbers and parameter blocks:
+### The ProDOS calls it handles
 
-| | |
-|---|---|
-| Files | `CREATE` `DESTROY` `RENAME` `OPEN` `NEWLINE` `READ` `WRITE` `CLOSE` |
-| Position and size | `SET_MARK` `GET_MARK` `SET_EOF` `GET_EOF` |
-| Information | `GET_FILE_INFO` `ON_LINE` `SET_PREFIX` `GET_PREFIX` |
-| Blocks | `READ_BLOCK` `WRITE_BLOCK` |
-| Leaving | `QUIT` |
+These are the 19 calls in the kernel's dispatch table (`src/KMLI.S`), each
+with ProDOS's call number, parameter count and parameter block. You call
+them exactly as you would under ProDOS:
 
-Any other call number returns error `$01`, as ProDOS does.
+```
+ JSR $BF00
+ DFB call_number
+ DA  parameter_block
+```
+
+On return, carry clear means success. Carry set means an error, with the
+code in A. The error codes are ProDOS's.
+
+| Call | Name | Params | Notes |
+|---|---|---|---|
+| `$C0` | `CREATE` | 7 | Files and subdirectories. Gives `$49` when the root directory's 51 entries are full; a subdirectory grows instead. Sets the backup bit and the creation date. |
+| `$C1` | `DESTROY` | 1 | Frees every block, whatever the storage type |
+| `$C2` | `RENAME` | 2 | Both names in the same directory (`$40` if not), as in ProDOS. Renaming a directory changes its header too. |
+| `$C4` | `GET_FILE_INFO` | 10 | Files, directories and volumes. A volume gives what ProDOS gives: type `$0F` and its size in blocks as the aux type. |
+| `$C5` | `ON_LINE` | 2 | Unit 0 lists every drive |
+| `$C6` | `SET_PREFIX` | 1 | |
+| `$C7` | `GET_PREFIX` | 1 | |
+| `$C8` | `OPEN` | 3 | Up to 8 files at once. The caller's 1,024-byte buffer holds the file's data block and index block while it's open. A second `OPEN` of a file that can be written gives `$50`, as in ProDOS. |
+| `$C9` | `NEWLINE` | 3 | |
+| `$CA` | `READ` | 4 | All three storage types; sparse files read back as zeros |
+| `$CB` | `WRITE` | 4 | Files grow from seedling to sapling to tree |
+| `$CC` | `CLOSE` | 1 | Reference 0 closes every open file. There are no file levels. |
+| `$CE` | `SET_MARK` | 2 | From 0 to the end of the file; past it gives `$4D`, as in ProDOS. To leave a hole, `SET_EOF` first. |
+| `$CF` | `GET_MARK` | 2 | |
+| `$D0` | `SET_EOF` | 2 | Shortening frees blocks and brings the storage type back down |
+| `$D1` | `GET_EOF` | 2 | |
+| `$80` | `READ_BLOCK` | 3 | One 512-byte block from a unit |
+| `$81` | `WRITE_BLOCK` | 3 | One 512-byte block to a unit |
+| `$65` | `QUIT` | 4 | No program selector: see below |
+
+**Not provided:** `FLUSH` (`$CD`), `SET_FILE_INFO` (`$C3`), `GET_TIME`
+(`$82`), `ALLOC_INTERRUPT` (`$40`), `DEALLOC_INTERRUPT` (`$41`), `GET_BUF`
+(`$D3`) and `SET_BUF` (`$D2`). These, and any other number, return error
+`$01`, as ProDOS does for a call it doesn't know.
+
+### The rest
 
 **The file system:**
 - seedling, sapling and tree files, read and written, growing across the
@@ -60,9 +97,6 @@ Compared with ProDOS 8, it has:
 - no interrupt handling: the vectors point at an `RTI`;
 - no program selector;
 - no BASIC.SYSTEM support.
-
-These calls aren't provided: `FLUSH`, `SET_FILE_INFO`, `GET_TIME`,
-`ALLOC_INTERRUPT`, `DEALLOC_INTERRUPT`, `GET_BUF` and `SET_BUF`.
 
 ## Memory
 
