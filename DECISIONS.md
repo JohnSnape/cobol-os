@@ -811,3 +811,15 @@ for their own projects.
 
   The calls not provided are listed with their numbers. **"SmartPort
   devices only" is stated at the top of the README.**
+
+### 6.18 CGWARN cleared at a run's start **(user)**
+
+This is COBOL's DECISIONS 8.11, fixed on 2026-11-25 in both trees.
+`VFINIT` didn't clear `$0E7D`, the point past which CONGETLN beeps. So
+until a program's first file-name ACCEPT, a value left there from before
+the run could make a plain ACCEPT beep. `VFINIT` now starts with
+`STZ CGWARN`.
+- VMLOOP.S is identical in both trees, and both builds' VM objects are
+  the same: 3 bytes longer, with 1,065 to spare.
+- Both 800K disks were rebuilt with `mk800.ps1`.
+- The kernel is unchanged.
